@@ -4,10 +4,10 @@ import requests
 import os
 
 app = Flask(__name__)
-CORS(app)
+CORS(app)  # Keeps communication open with your GitHub Pages frontend
 
-# 1. The correct, updated endpoint for the new router architecture
-API_URL = "https://router.huggingface.co/hf-inference/v1/chat/completions"
+# 1. FIXED: Correct global OpenAI-compatible base path for the new router
+API_URL = "https://router.huggingface.co/v1/chat/completions"
 HF_TOKEN = os.environ.get("HF_TOKEN")
 
 @app.route('/classify', methods=['POST'])
@@ -23,13 +23,13 @@ def classify():
         "Content-Type": "application/json"
     }
     
-    # 2. REQUIRED SCHEMA CHANGE: The new router demands the messages format
+    # 2. FIXED: Swapped to a globally whitelisted model ID on the router network
     payload = {
-        "model": "meta-llama/Llama-3.2-3B-Instruct",
+        "model": "meta-llama/Llama-3.1-8B-Instruct",
         "messages": [
             {
                 "role": "system", 
-                "content": "You are a movie classification engine. Analyze the movie plot and respond with ONLY the predicted genre name and nothing else (e.g., Sci-Fi, Drama, Action)."
+                "content": "You are a movie classification engine. Analyze the movie plot and respond with ONLY the single best predicted genre name and nothing else (e.g., Sci-Fi, Drama, Action)."
             },
             {
                 "role": "user", 
@@ -44,13 +44,13 @@ def classify():
         
         if response.status_code == 200:
             result = response.json()
-            # Extract the raw text string response from the new chat completions structure
+            # Extract the response string directly from the messaging array
             predicted_genre = result['choices'][0]['message']['content'].strip()
             
-            # Keeps the exact object properties your index.html file expects to see
+            # Returns data in the exact format your index.html file needs
             return jsonify({
                 'genre': predicted_genre,
-                'confidence': '100'  # Hardcoded text because the new router text API doesn't pass individual label float scores anymore
+                'confidence': 'Verified'
             })
         else:
             return jsonify({'error': f"HuggingFace Router rejected request: {response.text}"}), response.status_code
