@@ -6,7 +6,7 @@ import os
 app = Flask(__name__)
 CORS(app)
 
-API_URL = "https://api-inference.huggingface.co/models/Sinanmz/Movie_Genre_Classifier"
+API_URL = "https://api-inference.huggingface.co/pipeline/text-classification/Sinanmz/Movie_Genre_Classifier"
 HF_TOKEN = os.environ.get("HF_TOKEN")
 
 @app.route('/classify', methods=['POST'])
