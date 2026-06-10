@@ -1,52 +1,42 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import urllib.request
-import json
+import requests
 import os
 
 app = Flask(__name__)
-CORS(app)  # This allows your HTML file to communicate with this backend server
+CORS(app)
 
 API_URL = "https://api-inference.huggingface.co/models/Sinanmz/Movie_Genre_Classifier"
-HF_TOKEN = os.getenv("HF_TOKEN")
+HF_TOKEN = os.environ.get("HF_TOKEN")
 
 @app.route('/classify', methods=['POST'])
 def classify():
-    # 1. Grab the movie text sent from the HTML webpage
     data = request.json
     user_text = data.get('text', '')
     
     if not user_text:
         return jsonify({'error': 'No text provided'}), 400
 
-    # 2. Package the data and password for the Hugging Face API
-    payload = json.dumps({"inputs": user_text}).encode('utf-8')
-    headers = {
-        "Authorization": f"Bearer {HF_TOKEN}",
-        "Content-Type": "application/json"
-    }
+    headers = {"Authorization": f"Bearer {HF_TOKEN}"}
+    payload = {"inputs": user_text}
 
     try:
-        # 3. Fire the request directly to the AI server using standard Python tools
-        req = urllib.request.Request(API_URL, data=payload, headers=headers, method='POST')
+        # Use requests directly. It handles standard container DNS mapping automatically.
+        response = requests.post(API_URL, headers=headers, json=payload, timeout=20)
         
-        with urllib.request.urlopen(req, timeout=20) as response:
-            result = json.loads(response.read().decode('utf-8'))[0]
-            
-            # 4. Find the genre with the highest confidence calculation
+        if response.status_code == 200:
+            result = response.json()[0]
             best_guess = max(result, key=lambda x: x['score'])
             
-            # 5. Send clean numbers back to your HTML webpage
             return jsonify({
                 'genre': best_guess['label'],
                 'confidence': round(best_guess['score'] * 100)
             })
+        else:
+            return jsonify({'error': f"AI platform error code: {response.status_code}"}), response.status_code
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': f"Outbound network resolution error: {str(e)}"}), 500
 
 if __name__ == '__main__':
-    # Starts the local server on your computer
-    # app.run(port=5000)
-    # Tells the cloud server to listen to all incoming web traffic
     app.run(host='0.0.0.0', port=5000)
