@@ -25,7 +25,7 @@ def classify():
     
     # 2. REQUIRED SCHEMA CHANGE: The new router demands the messages format
     payload = {
-        "model": "Sinanmz/Movie_Genre_Classifier",
+        "model": "meta-llama/Llama-3.2-3B-Instruct",
         "messages": [
             {
                 "role": "system", 
